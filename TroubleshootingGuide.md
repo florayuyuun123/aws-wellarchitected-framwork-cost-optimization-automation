@@ -33,3 +33,33 @@ This document is continuously updated with issues, errors, and resolutions encou
 - Ensure proper YAML indentation is maintained in `cleanup_document.yaml`.
 
 *(More issues will be added here as the project evolves)*
+
+### 5. CloudFormation `EnvironmentName` Parameter Not Found
+**Issue:** `aws cloudformation create-stack` fails with `Parameters: [EnvironmentName] do not exist in the template`.
+**Cause:** The `wasteful_infrastructure.yaml` template had two separate `Parameters:` blocks. YAML treats duplicate keys as an override, so the second block (containing only `LatestAmiId`) silently overwrote the first (containing `EnvironmentName`).
+**Resolution:** Merged both parameter definitions into a single `Parameters:` block at the top of the template.
+
+### 6. SNS Subscription Confirmation Email Sent to Spam
+**Issue:** SNS subscription remains in "Pending confirmation" status and no email is received.
+**Cause:** Gmail (and other providers) may route AWS notification emails to the Spam folder.
+**Resolution:**
+- Search Gmail for `from:no-reply@sns.amazonaws.com` and check Spam/Promotions tabs.
+- Alternatively, manually resubscribe via CLI: `aws sns subscribe --topic-arn <ARN> --protocol email --notification-endpoint <EMAIL> --region us-east-1`
+
+### 7. SSM `create-document` Fails with "JSON not well-formed"
+**Issue:** `aws ssm create-document --content file://cleanup_document.yaml` fails with `InvalidDocumentContent: JSON not well-formed`.
+**Cause:** The `aws ssm create-document` command defaults to JSON format. Passing a YAML file without specifying the format causes a parse error.
+**Resolution:** Add `--document-format YAML` to the command:
+```bash
+aws ssm create-document \
+  --name "flo-tech-CostGovCleanup" \
+  --document-type "Automation" \
+  --document-format YAML \
+  --content file://ssm_automation/cleanup_document.yaml \
+  --region us-east-1
+```
+
+### 8. SSM `create-document` Fails with "python3.8 is not a supported runtime"
+**Issue:** SSM Automation document creation fails with `InvalidDocumentContent: python3.8 is not a supported runtime`.
+**Cause:** AWS deprecated Python 3.8 as a runtime for SSM Automation `aws:executeScript` actions.
+**Resolution:** Update `Runtime: python3.8` to `Runtime: python3.11` in `cleanup_document.yaml`.

@@ -15,6 +15,9 @@ Parameters:
       - t3.micro
       - t3.medium
       - t3.large
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
 
 Resources:
   # 1. Idle EC2 Instance
@@ -54,11 +57,6 @@ Resources:
       Tags:
         - Key: Purpose
           Value: CostGovernanceDemo
-
-Parameters:
-  LatestAmiId:
-    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
 
 Outputs:
   InstanceId:

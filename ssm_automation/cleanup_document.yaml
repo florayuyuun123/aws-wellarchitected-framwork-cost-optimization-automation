@@ -16,7 +16,7 @@ mainSteps:
     action: aws:executeScript
     description: 'Executes the Python cleanup script.'
     inputs:
-      Runtime: python3.8
+      Runtime: python3.11
       Handler: script_handler
       InputPayload:
         SNSTopicArn: '{{ SNSTopicArn }}'

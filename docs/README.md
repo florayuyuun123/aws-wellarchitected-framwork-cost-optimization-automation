@@ -36,7 +36,7 @@ aws cloudformation create-stack \
   --stack-name flo-tech-Governance \
   --template-body file://cloudformation/governance_setup.yaml \
   --capabilities CAPABILITY_NAMED_IAM \
-  --parameters ParameterKey=NotificationEmail,ParameterValue=prettyflo@gmail.com \
+  --parameters ParameterKey=NotificationEmail,ParameterValue=prettyflo02@gmail.com \
   --region us-east-1
 ```
 *(Check your email to confirm the SNS subscription)*
@@ -46,6 +46,7 @@ aws cloudformation create-stack \
 aws ssm create-document \
   --name "flo-tech-CostGovCleanup" \
   --document-type "Automation" \
+  --document-format YAML \
   --content file://ssm_automation/cleanup_document.yaml \
   --region us-east-1
 ```
