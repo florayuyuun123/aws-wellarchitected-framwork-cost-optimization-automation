@@ -14,7 +14,6 @@ To demonstrate how Solutions Architects identify and eliminate unnecessary AWS c
 ## Project Structure
 - `cloudformation/`: Contains the IaC templates for both the wasteful infrastructure and the governance setup.
 - `ssm_automation/`: Contains the SSM Automation documents and the embedded Python cleanup logic.
-- `media/`: Drafts for the Medium article and LinkedIn post explaining the project.
 - `TroubleshootingGuide.md`: A living document capturing issues encountered during deployment and execution.
 
 ## Deployment Guide
