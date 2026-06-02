@@ -1,0 +1,114 @@
+<mxfile host="app.diagrams.net" modified="2023-10-01T12:00:00.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram name="Cost Governance Flow" id="aws_cost_gov">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1000" pageHeight="700" math="0" shadow="0" background="#181818">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- TITLE -->
+        <mxCell id="Title" value="&lt;b&gt;&lt;font style=&apos;font-size: 32px; color: #FFFFFF;&apos;&gt;Automated AWS Cost Governance&lt;/font&gt;&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="100" y="20" width="800" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- GROUPING BOXES -->
+        <!-- Wasteful Infrastructure -->
+        <mxCell id="BoxWaste" value="Wasteful Infrastructure" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;fontColor=#FFFFFF;strokeColor=#F58536;strokeWidth=2;dashed=1;dashPattern=8 8;verticalAlign=top;align=center;spacingTop=10;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="60" y="140" width="220" height="480" as="geometry" />
+        </mxCell>
+        
+        <!-- Detection -->
+        <mxCell id="BoxDetect" value="Detection" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;fontColor=#FFFFFF;strokeColor=#E7157B;strokeWidth=2;dashed=1;dashPattern=8 8;verticalAlign=top;align=center;spacingTop=10;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="360" y="140" width="200" height="480" as="geometry" />
+        </mxCell>
+
+        <!-- Remediation & Alerting -->
+        <mxCell id="BoxRemediate" value="Remediation &amp; Alerting" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;fontColor=#FFFFFF;strokeColor=#4DB8FF;strokeWidth=2;dashed=1;dashPattern=8 8;verticalAlign=top;align=center;spacingTop=10;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="660" y="140" width="220" height="480" as="geometry" />
+        </mxCell>
+
+        <!-- ICONS: WASTEFUL -->
+        <mxCell id="EC2" value="Idle EC2 Instance" style="outlineConnect=0;fontColor=#FFFFFF;gradientColor=none;fillColor=#F58536;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=1;aspect=fixed;shape=mxgraph.aws4.ec2;" vertex="1" parent="1">
+          <mxGeometry x="130" y="200" width="80" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="EBS" value="Unattached EBS Volume" style="outlineConnect=0;fontColor=#FFFFFF;gradientColor=none;fillColor=#F58536;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=1;aspect=fixed;shape=mxgraph.aws4.ebs;" vertex="1" parent="1">
+          <mxGeometry x="130" y="340" width="80" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="S3" value="Inefficient S3 Bucket" style="outlineConnect=0;fontColor=#FFFFFF;gradientColor=none;fillColor=#3F8624;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=1;aspect=fixed;shape=mxgraph.aws4.s3;" vertex="1" parent="1">
+          <mxGeometry x="130" y="480" width="80" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ICONS: DETECTION -->
+        <mxCell id="CloudWatch" value="CloudWatch Alarms" style="outlineConnect=0;fontColor=#FFFFFF;gradientColor=none;fillColor=#E7157B;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=1;aspect=fixed;shape=mxgraph.aws4.cloudwatch;" vertex="1" parent="1">
+          <mxGeometry x="410" y="270" width="100" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="TrustedAdvisor" value="AWS Trusted&lt;br&gt;Advisor" style="outlineConnect=0;fontColor=#FFFFFF;gradientColor=none;fillColor=#E7157B;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=1;aspect=fixed;shape=mxgraph.aws4.trusted_advisor;" vertex="1" parent="1">
+          <mxGeometry x="410" y="440" width="100" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- ICONS: REMEDIATION -->
+        <mxCell id="SSM" value="SSM Automation&lt;br&gt;(Boto3)&lt;br&gt;&lt;font style=&apos;font-size: 10px; font-weight: normal;&apos;&gt;Notifies Admin&lt;/font&gt;" style="outlineConnect=0;fontColor=#FFFFFF;gradientColor=none;fillColor=#4DB8FF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=1;aspect=fixed;shape=mxgraph.aws4.systems_manager;" vertex="1" parent="1">
+          <mxGeometry x="720" y="270" width="100" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="SNS" value="SNS Topic&lt;br&gt;(Email Alert)" style="outlineConnect=0;fontColor=#FFFFFF;gradientColor=none;fillColor=#A0B8D0;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=1;aspect=fixed;shape=mxgraph.aws4.sns;" vertex="1" parent="1">
+          <mxGeometry x="730" y="480" width="80" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ARROWS -->
+        <!-- Monitors metrics (Waste -> CW) -->
+        <mxCell id="ArrowMonitorsMetrics" value="Monitors metrics" style="endArrow=classic;html=1;fontColor=#FFFFFF;strokeColor=#FFFFFF;strokeWidth=1;fontSize=12;fontStyle=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="280" y="400" as="sourcePoint" />
+            <mxPoint x="410" y="330" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Monitors waste (Waste -> TA) -->
+        <mxCell id="ArrowMonitorsWaste" value="Monitors waste" style="endArrow=classic;html=1;fontColor=#FFFFFF;strokeColor=#FFFFFF;strokeWidth=1;fontSize=12;fontStyle=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="280" y="400" as="sourcePoint" />
+            <mxPoint x="410" y="490" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Triggers CW -> SSM -->
+        <mxCell id="ArrowTriggerCW" value="Triggers" style="endArrow=classic;html=1;fontColor=#FFFFFF;strokeColor=#FFFFFF;strokeWidth=1;fontSize=12;fontStyle=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="510" y="320" as="sourcePoint" />
+            <mxPoint x="720" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Triggers TA -> SSM -->
+        <mxCell id="ArrowTriggerTA" value="Triggers" style="endArrow=classic;html=1;fontColor=#FFFFFF;strokeColor=#FFFFFF;strokeWidth=1;fontSize=12;fontStyle=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="510" y="490" as="sourcePoint" />
+            <mxPoint x="720" y="350" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- SSM -> SNS -->
+        <mxCell id="ArrowNotify" value="" style="endArrow=classic;html=1;strokeColor=#FFFFFF;strokeWidth=1;" edge="1" parent="1" source="SSM" target="SNS">
+          <mxGeometry width="50" height="50" relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- LOOPBACK: SSM -> Waste -->
+        <mxCell id="ArrowLoopback" value="Auto-Remediates(Stops/Deletes resources)" style="endArrow=classic;html=1;strokeColor=#E7157B;strokeWidth=2;fontColor=#E7157B;edgeStyle=orthogonalEdgeStyle;rounded=1;fontSize=12;fontStyle=1;" edge="1" parent="1">
+          <mxGeometry x="-0.32" y="15" width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="770" y="270" as="sourcePoint" />
+            <mxPoint x="170" y="140" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="770" y="90" />
+              <mxPoint x="170" y="90" />
+            </Array>
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

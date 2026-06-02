@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Automated Cost Governance Project - Governance, Roles, and Monitoring Setup'
+
+Parameters:
+  NotificationEmail:
+    Description: Email address to notify regarding cost anomalies and cleanup approvals. Handled securely.
+    Type: String
+    Default: prettyflo@gmail.com
+    NoEcho: true
+
+Resources:
+  # 1. SNS Topic for Notifications
+  CostGovernanceSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: flo-tech-CostGovAlerts
+      TopicName: flo-tech-CostGovAlerts
+
+  # 2. SNS Subscription
+  CostGovernanceSNSSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !Ref NotificationEmail
+      Protocol: email
+      TopicArn: !Ref CostGovernanceSNSTopic
+
+  # 3. IAM Role for SSM Automation
+  CostGovernanceSSMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: flo-tech-CostGovSSMRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - ssm.amazonaws.com
+            Action: 
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonSSMAutomationRole
+      Policies:
+        - PolicyName: flo-tech-CostGovRemediationPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeInstances
+                  - ec2:StopInstances
+                  - ec2:DescribeVolumes
+                  - ec2:CreateSnapshot
+                  - ec2:DeleteVolume
+                  - s3:PutLifecycleConfiguration
+                  - sns:Publish
+                Resource: '*'
+
+  # 4. CloudWatch Billing Alarm
+  CostGovernanceBillingAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: flo-tech-CostGovBillingAlarm
+      AlarmDescription: "Alerts when estimated AWS charges exceed $10"
+      Namespace: AWS/Billing
+      MetricName: EstimatedCharges
+      Dimensions:
+        - Name: Currency
+          Value: USD
+      Statistic: Maximum
+      Period: 21600 # 6 hours
+      EvaluationPeriods: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref CostGovernanceSNSTopic
+
+Outputs:
+  SNSTopicArn:
+    Description: ARN of the SNS Topic for Cost Governance
+    Value: !Ref CostGovernanceSNSTopic
+  SSMRoleArn:
+    Description: ARN of the IAM Role for SSM Automation
+    Value: !GetAtt CostGovernanceSSMRole.Arn

@@ -1,0 +1,103 @@
+schemaVersion: '0.3'
+description: 'Cost Governance Automation: Stops idle EC2 instances and snapshots/deletes unattached EBS volumes.'
+assumeRole: '{{ AutomationAssumeRole }}'
+
+parameters:
+  AutomationAssumeRole:
+    type: String
+    description: '(Required) The ARN of the role that allows Automation to perform the actions on your behalf.'
+  SNSTopicArn:
+    type: String
+    description: '(Optional) The ARN of the SNS topic to notify upon successful cleanup.'
+    default: ''
+
+mainSteps:
+  - name: ExecuteCleanupScript
+    action: aws:executeScript
+    description: 'Executes the Python cleanup script.'
+    inputs:
+      Runtime: python3.8
+      Handler: script_handler
+      InputPayload:
+        SNSTopicArn: '{{ SNSTopicArn }}'
+      Script: |-
+        import boto3
+        import json
+
+        def cleanup_unattached_volumes(ec2_client):
+            volumes = ec2_client.describe_volumes(Filters=[{'Name': 'status', 'Values': ['available']}])['Volumes']
+            deleted_volumes = []
+            for volume in volumes:
+                vol_id = volume['VolumeId']
+                ec2_client.create_snapshot(VolumeId=vol_id, Description=f"Auto-snapshot {vol_id}")
+                ec2_client.delete_volume(VolumeId=vol_id)
+                deleted_volumes.append(vol_id)
+            return deleted_volumes
+
+        def stop_idle_instances(ec2_client):
+            instances = ec2_client.describe_instances(
+                Filters=[
+                    {'Name': 'instance-state-name', 'Values': ['running']},
+                    {'Name': 'tag:Status', 'Values': ['Idle']}
+                ]
+            )
+            stopped_instances = []
+            for reservation in instances['Reservations']:
+                for instance in reservation['Instances']:
+                    inst_id = instance['InstanceId']
+                    ec2_client.stop_instances(InstanceIds=[inst_id])
+                    stopped_instances.append(inst_id)
+            return stopped_instances
+
+        def apply_s3_lifecycle_policies(s3_client):
+            response = s3_client.list_buckets()
+            updated_buckets = []
+            for bucket in response['Buckets']:
+                if 'inefficient-logs' in bucket['Name']:
+                    lifecycle_config = {
+                        'Rules': [
+                            {
+                                'ID': 'MoveToGlacierAndExpire',
+                                'Status': 'Enabled',
+                                'Filter': {'Prefix': ''},
+                                'Transitions': [{'Days': 30, 'StorageClass': 'GLACIER'}],
+                                'Expiration': {'Days': 365}
+                            }
+                        ]
+                    }
+                    try:
+                        s3_client.put_bucket_lifecycle_configuration(
+                            Bucket=bucket['Name'],
+                            LifecycleConfiguration=lifecycle_config
+                        )
+                        updated_buckets.append(bucket['Name'])
+                    except Exception:
+                        pass
+            return updated_buckets
+
+        def script_handler(event, context):
+            ec2 = boto3.client('ec2')
+            s3 = boto3.client('s3')
+            sns = boto3.client('sns')
+            
+            sns_topic_arn = event.get('SNSTopicArn')
+            
+            deleted_volumes = cleanup_unattached_volumes(ec2)
+            stopped_instances = stop_idle_instances(ec2)
+            updated_buckets = apply_s3_lifecycle_policies(s3)
+            
+            summary = {
+                "DeletedVolumes": deleted_volumes,
+                "StoppedInstances": stopped_instances,
+                "OptimizedBuckets": updated_buckets
+            }
+            
+            if sns_topic_arn and (deleted_volumes or stopped_instances or updated_buckets):
+                message = f"Automated Remediation Executed.\nDeleted Volumes: {deleted_volumes}\nStopped Instances: {stopped_instances}\nOptimized Buckets: {updated_buckets}"
+                sns.publish(TopicArn=sns_topic_arn, Subject="Cost Governance Remediation", Message=message)
+                
+            return summary
+    outputs:
+      - Name: Payload
+        Selector: $.Payload
+        Type: StringMap
