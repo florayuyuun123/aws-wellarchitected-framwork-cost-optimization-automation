@@ -8,8 +8,8 @@ To demonstrate how Solutions Architects identify and eliminate unnecessary AWS c
 ## Architecture & Workflow
 1. **Deliberate Waste**: A CloudFormation stack provisions wasteful resources (e.g., unattached EBS volumes, idle EC2 instances) to simulate a real-world, unoptimized environment.
 2. **Detection**: AWS Trusted Advisor and CloudWatch metrics identify cost anomalies and unused resources.
-3. **Governance**: IAM Roles and SNS Topics are configured for proper governance, approvals, and alerting.
-4. **Remediation**: AWS Systems Manager (SSM) Automation Documents execute Python (Boto3) scripts to clean up resources (snapshot and delete unattached volumes, stop idle instances).
+3. **Governance & Automation**: EventBridge rules automatically intercept alerts from CloudWatch and Trusted Advisor. IAM Roles and SNS Topics are configured for secure execution and administrator alerting.
+4. **Remediation**: AWS Systems Manager (SSM) Automation Documents, triggered automatically by EventBridge, execute Python (Boto3) scripts to clean up resources (snapshot and delete unattached volumes, stop idle instances).
 
 ## Project Structure
 - `cloudformation/`: Contains the IaC templates for both the wasteful infrastructure and the governance setup.
@@ -51,8 +51,8 @@ aws ssm create-document \
   --region us-east-1
 ```
 
-### 4. Execute Remediation (Manual Trigger)
-While CloudWatch billing alarms serve as our automated trigger, you can execute the remediation manually to see the optimization in action immediately:
+### 4. On-Demand / Testing Remediation (Manual Trigger)
+While CloudWatch billing alarms and Trusted Advisor checks now serve as our fully automated triggers via EventBridge, you can execute the remediation manually to see the optimization in action immediately:
 ```bash
 aws ssm start-automation-execution \
   --document-name "flo-tech-CostGovCleanup" \

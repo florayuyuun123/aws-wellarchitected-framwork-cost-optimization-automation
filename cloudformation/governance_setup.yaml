@@ -52,6 +52,8 @@ Resources:
                   - ec2:DescribeVolumes
                   - ec2:CreateSnapshot
                   - ec2:DeleteVolume
+                  - s3:ListAllMyBuckets
+                  - s3:GetLifecycleConfiguration
                   - s3:PutLifecycleConfiguration
                   - sns:Publish
                 Resource: '*'
@@ -74,6 +76,85 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       AlarmActions:
         - !Ref CostGovernanceSNSTopic
+
+  # 5. IAM Role for EventBridge to invoke SSM Automation
+  EventBridgeInvokeSSMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: flo-tech-EventBridgeInvokeSSMRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeSSMAutomation
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ssm:StartAutomationExecution
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:document/flo-tech-CostGovCleanup"
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource: !GetAtt CostGovernanceSSMRole.Arn
+
+  # 6. EventBridge Rule: CloudWatch Billing Alarm
+  CloudWatchAlarmEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Triggers SSM Automation when Billing Alarm goes to ALARM state
+      EventPattern:
+        source:
+          - aws.cloudwatch
+        detail-type:
+          - CloudWatch Alarm State Change
+        detail:
+          alarmName:
+            - !Ref CostGovernanceBillingAlarm
+          state:
+            value:
+              - ALARM
+      State: ENABLED
+      Targets:
+        - Arn: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:document/flo-tech-CostGovCleanup"
+          Id: "TriggerSSMCleanup"
+          RoleArn: !GetAtt EventBridgeInvokeSSMRole.Arn
+          Input: !Sub |
+            {
+              "AutomationAssumeRole": ["${CostGovernanceSSMRole.Arn}"],
+              "SNSTopicArn": ["${CostGovernanceSNSTopic}"]
+            }
+
+  # 7. EventBridge Rule: Trusted Advisor
+  TrustedAdvisorEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Triggers SSM Automation on Trusted Advisor cost anomaly detection
+      EventPattern:
+        source:
+          - aws.trustedadvisor
+        detail-type:
+          - Trusted Advisor Check Item Refresh Notification
+        detail:
+          check-name:
+            - Low Utilization Amazon EC2 Instances
+            - Unattached Elastic Block Store Volumes
+          status:
+            - WARN
+            - ERROR
+      State: ENABLED
+      Targets:
+        - Arn: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:document/flo-tech-CostGovCleanup"
+          Id: "TriggerSSMCleanupTA"
+          RoleArn: !GetAtt EventBridgeInvokeSSMRole.Arn
+          Input: !Sub |
+            {
+              "AutomationAssumeRole": ["${CostGovernanceSSMRole.Arn}"],
+              "SNSTopicArn": ["${CostGovernanceSNSTopic}"]
+            }
 
 Outputs:
   SNSTopicArn:

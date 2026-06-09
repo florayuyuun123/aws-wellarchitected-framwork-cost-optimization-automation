@@ -63,3 +63,21 @@ aws ssm create-document \
 **Issue:** SSM Automation document creation fails with `InvalidDocumentContent: python3.8 is not a supported runtime`.
 **Cause:** AWS deprecated Python 3.8 as a runtime for SSM Automation `aws:executeScript` actions.
 **Resolution:** Update `Runtime: python3.8` to `Runtime: python3.11` in `cleanup_document.yaml`.
+
+### 9. SSM Automation Execution Fails with `AccessDeniedException` on `s3:ListBuckets`
+**Issue:** SSM Automation execution status shows `Failed`. The failure message in the step output reads: `AccessDeniedException` when calling `list_buckets`.
+**Cause:** `s3:ListBuckets` (used by `boto3 s3_client.list_buckets()`) maps to the IAM action `s3:ListAllMyBuckets`, NOT `s3:ListBucket`. These are two completely different IAM actions. The policy in `governance_setup.yaml` was missing `s3:ListAllMyBuckets`.
+**Resolution:** Add the following two actions to the IAM inline policy in `governance_setup.yaml` and redeploy the `flo-tech-Governance` stack:
+```yaml
+- s3:ListAllMyBuckets
+- s3:GetLifecycleConfiguration
+```
+Then update or recreate the `flo-tech-Governance` CloudFormation stack:
+```bash
+aws cloudformation create-stack \
+  --stack-name flo-tech-Governance \
+  --template-body file://cloudformation/governance_setup.yaml \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --parameters ParameterKey=NotificationEmail,ParameterValue=prettyflo02@gmail.com \
+  --region us-east-1
+```
