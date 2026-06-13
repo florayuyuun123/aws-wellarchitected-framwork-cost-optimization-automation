@@ -60,6 +60,36 @@ aws ssm start-automation-execution \
   --region us-east-1
 ```
 
+## Verify Governance is Active
+
+### 1. Confirm CloudWatch Billing Alarm
+```bash
+aws cloudwatch describe-alarms \
+  --query "MetricAlarms[?contains(AlarmName, 'flo-tech')].[AlarmName,StateValue,Threshold]" \
+  --output table --region us-east-1
+```
+**Expected:** `INSUFFICIENT_DATA` initially (billing metrics update once or twice per day), then `OK` or `ALARM` once data is collected. `ALARM` means the $10 threshold was breached and EventBridge will trigger the SSM automation.
+
+### 2. Confirm EventBridge Rules are Enabled
+```bash
+aws events list-rules \
+  --query "Rules[?contains(Name, 'flo-tech')].[Name,State,ScheduleExpression]" \
+  --output table --region us-east-1
+```
+**Expected:** Both `CloudWatchAlarmEventRule` and `TrustedAdvisorEventRule` should show `ENABLED`.
+
+### 3. Trusted Advisor
+Trusted Advisor API requires a Business, Enterprise On-Ramp, or Enterprise support plan. If on free tier, check cost optimization findings directly in the [Trusted Advisor Console](https://console.aws.amazon.com/trustedadvisor).
+
+### 4. Confirm S3 Lifecycle Policy was Applied
+```bash
+aws s3api get-bucket-lifecycle-configuration \
+  --bucket flo-tech-inefficient-logs-$(aws sts get-caller-identity --query Account --output text)-us-east-1
+```
+**Expected:** Returns the lifecycle rules (Glacier transition after 30 days, expiration after 365 days) once SSM automation has run. If automation hasn't run yet, returns `NoSuchLifecycleConfiguration`.
+
+---
+
 ## Verification & Waste Analysis
 
 Once the `flo-tech-WastefulInfra` stack is deployed, you can verify the wasteful resources using the following bash commands:
@@ -99,8 +129,9 @@ aws s3api list-buckets \
 To ensure you do not incur lingering charges, clean up the resources with these bash commands:
 
 ```bash
-aws cloudformation delete-stack --stack-name flo-tech-WastefulInfra --region us-east-1
 aws cloudformation delete-stack --stack-name flo-tech-Governance --region us-east-1
+aws cloudformation delete-stack --stack-name flo-tech-WastefulInfra --region us-east-1
+aws ssm delete-document --name "flo-tech-CostGovCleanup" --region us-east-1
 ```
 ## Cost Optimization Strategies Demonstrated
 - Identifying and cleaning up unattached EBS volumes.

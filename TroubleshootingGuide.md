@@ -34,6 +34,23 @@ This document is continuously updated with issues, errors, and resolutions encou
 
 *(More issues will be added here as the project evolves)*
 
+### 11. EBS Volume Stuck in `deleting` for Over an Hour
+**Issue:** EBS volume remains in `deleting` state for over an hour even after the snapshot shows `completed` at 100%.
+**Cause:** AWS-side infrastructure issue — the volume deletion process did not complete despite the snapshot finishing successfully.
+**Resolution:** Force-delete the volume manually:
+```bash
+aws ec2 delete-volume --volume-id <volume-id> --region us-east-1
+```
+Then confirm it's gone (expect `InvalidVolume.NotFound`):
+```bash
+aws ec2 describe-volumes --volume-ids <volume-id> --query "Volumes[*].State" --output text --region us-east-1
+```
+Then retry the stack deletion:
+```bash
+aws cloudformation delete-stack --stack-name flo-tech-WastefulInfra --region us-east-1
+```
+If the force delete also fails, open an AWS Support case as this is an AWS backend issue.
+
 ### 10. CloudFormation Stack Deletion Fails — EBS Volume Stuck in `deleting`
 **Issue:** `flo-tech-WastefulInfra` stack deletion fails with `The following resource(s) failed to delete: [UnattachedEBSVolume]`. The volume remains stuck in `deleting` state for several minutes.
 **Cause:** The SSM cleanup script called `delete_volume` immediately after `create_snapshot` without waiting for the snapshot to complete. AWS internally holds the volume in `deleting` state until any in-progress snapshots tied to it are finished, causing a multi-minute delay and CloudFormation timeout.
