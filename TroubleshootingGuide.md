@@ -34,32 +34,17 @@ This document is continuously updated with issues, errors, and resolutions encou
 
 *(More issues will be added here as the project evolves)*
 
-### 10. CloudFormation Stack Deletion Fails — EBS Volume Not Deleted
-**Issue:** `flo-tech-WastefulInfra` stack deletion fails with `The following resource(s) failed to delete: [UnattachedEBSVolume]`.
-**Cause:** CloudFormation's default `DeletionPolicy` for EBS volumes is `Snapshot`, which creates a snapshot but leaves the volume itself behind, causing the stack deletion to fail.
-**Resolution:**
-- Add `DeletionPolicy: Delete` to the `UnattachedEBSVolume` resource in `wasteful_infrastructure.yaml` for future deployments.
-- For an already-stuck stack, manually delete the volume and use `--retain-resources` to finish the stack deletion:
-```bash
-# Get the volume ID
-aws cloudformation describe-stack-resources \
-  --stack-name flo-tech-WastefulInfra \
-  --query "StackResources[?ResourceType=='AWS::EC2::Volume'].PhysicalResourceId" \
-  --output text --region us-east-1
-
-# Manually delete the volume
-aws ec2 delete-volume --volume-id <volume-id> --region us-east-1
-
-# Retry stack deletion, skipping the stuck resource
-aws cloudformation delete-stack \
-  --stack-name flo-tech-WastefulInfra \
-  --retain-resources UnattachedEBSVolume \
-  --region us-east-1
+### 10. CloudFormation Stack Deletion Fails — EBS Volume Stuck in `deleting`
+**Issue:** `flo-tech-WastefulInfra` stack deletion fails with `The following resource(s) failed to delete: [UnattachedEBSVolume]`. The volume remains stuck in `deleting` state for several minutes.
+**Cause:** The SSM cleanup script called `delete_volume` immediately after `create_snapshot` without waiting for the snapshot to complete. AWS internally holds the volume in `deleting` state until any in-progress snapshots tied to it are finished, causing a multi-minute delay and CloudFormation timeout.
+**Resolution:** Added a snapshot waiter in both `cleanup_script.py` and `cleanup_document.yaml` to wait for the snapshot to complete before calling `delete_volume`. The waiter checks every 15 seconds for up to 10 minutes:
+```python
+snapshot = ec2_client.create_snapshot(VolumeId=vol_id, Description=f"Auto-snapshot {vol_id}")
+waiter = ec2_client.get_waiter('snapshot_completed')
+waiter.wait(SnapshotIds=[snapshot['SnapshotId']], WaiterConfig={'Delay': 15, 'MaxAttempts': 40})
+ec2_client.delete_volume(VolumeId=vol_id)
 ```
-- Confirm the volume is gone (expect `InvalidVolume.NotFound`):
-```bash
-aws ec2 describe-volumes --volume-ids <volume-id> --query "Volumes[*].State" --output text --region us-east-1
-```
+With this fix, the volume deletes cleanly after the snapshot completes, and CloudFormation teardown succeeds without needing a `DeletionPolicy` workaround. Always run SSM automation before `delete-stack`.
 
 ### 5. CloudFormation `EnvironmentName` Parameter Not Found
 **Issue:** `aws cloudformation create-stack` fails with `Parameters: [EnvironmentName] do not exist in the template`.

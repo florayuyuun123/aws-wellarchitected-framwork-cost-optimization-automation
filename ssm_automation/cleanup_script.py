@@ -17,10 +17,15 @@ def cleanup_unattached_volumes(ec2_client):
             VolumeId=vol_id,
             Description=f"Snapshot of unattached volume {vol_id} created by Cost Governance Automation"
         )
-        print(f"Created snapshot: {snapshot['SnapshotId']}")
+        print(f"Created snapshot: {snapshot['SnapshotId']}. Waiting for snapshot to complete (may take 1-5 minutes)...")
         
-        # Delete the volume
-        print(f"Deleting volume: {vol_id}")
+        # Wait for snapshot to complete before deleting volume
+        waiter = ec2_client.get_waiter('snapshot_completed')
+        waiter.wait(
+            SnapshotIds=[snapshot['SnapshotId']],
+            WaiterConfig={'Delay': 15, 'MaxAttempts': 40}  # checks every 15s, up to 10 minutes
+        )
+        print(f"Snapshot complete. Deleting volume: {vol_id}")
         ec2_client.delete_volume(VolumeId=vol_id)
         deleted_volumes.append(vol_id)
         

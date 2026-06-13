@@ -29,7 +29,10 @@ mainSteps:
             deleted_volumes = []
             for volume in volumes:
                 vol_id = volume['VolumeId']
-                ec2_client.create_snapshot(VolumeId=vol_id, Description=f"Auto-snapshot {vol_id}")
+                snapshot = ec2_client.create_snapshot(VolumeId=vol_id, Description=f"Auto-snapshot {vol_id}")
+                # Wait for snapshot to complete before deleting (checks every 15s, up to 10 minutes)
+                waiter = ec2_client.get_waiter('snapshot_completed')
+                waiter.wait(SnapshotIds=[snapshot['SnapshotId']], WaiterConfig={'Delay': 15, 'MaxAttempts': 40})
                 ec2_client.delete_volume(VolumeId=vol_id)
                 deleted_volumes.append(vol_id)
             return deleted_volumes
