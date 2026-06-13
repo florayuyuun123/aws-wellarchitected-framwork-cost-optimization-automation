@@ -34,6 +34,33 @@ This document is continuously updated with issues, errors, and resolutions encou
 
 *(More issues will be added here as the project evolves)*
 
+### 10. CloudFormation Stack Deletion Fails — EBS Volume Not Deleted
+**Issue:** `flo-tech-WastefulInfra` stack deletion fails with `The following resource(s) failed to delete: [UnattachedEBSVolume]`.
+**Cause:** CloudFormation's default `DeletionPolicy` for EBS volumes is `Snapshot`, which creates a snapshot but leaves the volume itself behind, causing the stack deletion to fail.
+**Resolution:**
+- Add `DeletionPolicy: Delete` to the `UnattachedEBSVolume` resource in `wasteful_infrastructure.yaml` for future deployments.
+- For an already-stuck stack, manually delete the volume and use `--retain-resources` to finish the stack deletion:
+```bash
+# Get the volume ID
+aws cloudformation describe-stack-resources \
+  --stack-name flo-tech-WastefulInfra \
+  --query "StackResources[?ResourceType=='AWS::EC2::Volume'].PhysicalResourceId" \
+  --output text --region us-east-1
+
+# Manually delete the volume
+aws ec2 delete-volume --volume-id <volume-id> --region us-east-1
+
+# Retry stack deletion, skipping the stuck resource
+aws cloudformation delete-stack \
+  --stack-name flo-tech-WastefulInfra \
+  --retain-resources UnattachedEBSVolume \
+  --region us-east-1
+```
+- Confirm the volume is gone (expect `InvalidVolume.NotFound`):
+```bash
+aws ec2 describe-volumes --volume-ids <volume-id> --query "Volumes[*].State" --output text --region us-east-1
+```
+
 ### 5. CloudFormation `EnvironmentName` Parameter Not Found
 **Issue:** `aws cloudformation create-stack` fails with `Parameters: [EnvironmentName] do not exist in the template`.
 **Cause:** The `wasteful_infrastructure.yaml` template had two separate `Parameters:` blocks. YAML treats duplicate keys as an override, so the second block (containing only `LatestAmiId`) silently overwrote the first (containing `EnvironmentName`).

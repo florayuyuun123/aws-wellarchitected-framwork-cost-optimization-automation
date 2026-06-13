@@ -66,11 +66,8 @@ Once the `flo-tech-WastefulInfra` stack is deployed, you can verify the wasteful
 
 ### 1. Verify the Idle EC2 Instance
 ```bash
-aws ec2 describe-instances \
-  --filters "Name=tag:Status,Values=Idle" "Name=instance-state-name,Values=running" \
-  --query "Reservations[*].Instances[*].[InstanceId,InstanceType,Tags[?Key=='Name'].Value|[0]]" \
-  --output table \
-  --region us-east-1
+aws ec2 describe-instances --filters "Name=tag:Status,Values=Idle" --query "Reservations[*].Instances[*].[InstanceId,State.Name]" --output table --region us-east-1
+
 ```
 **Why it's wasteful:** This instance (e.g., a `t3.medium`) is running but is serving no traffic. It's tagged as 'Idle', which simulates a development server left on over the weekend or a forgotten test environment. You are being billed per hour for a resource providing zero business value.
 
@@ -82,6 +79,12 @@ aws ec2 describe-volumes \
   --output table \
   --region us-east-1
 ```
+
+### Check that a backup Snapshot was created before deletion:
+```bash
+aws ec2 describe-snapshots --owner-ids self --query "Snapshots[?contains(Description, 'Auto-snapshot')].[SnapshotId,Description]" --output table --region us-east-1
+```
+
 **Why it's wasteful:** An EBS volume with the status `available` means it is **not attached** to any EC2 instance. Even though it's not being used, AWS still charges you for the provisioned storage per GB-month. This frequently happens when an EC2 instance is terminated but the developer forgets to check the box to delete the attached EBS volumes.
 
 ### 3. Verify the Inefficient S3 Bucket

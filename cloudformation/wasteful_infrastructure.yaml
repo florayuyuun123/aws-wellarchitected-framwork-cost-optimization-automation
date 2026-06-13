@@ -37,6 +37,7 @@ Resources:
   # 2. Unattached EBS Volume
   UnattachedEBSVolume:
     Type: AWS::EC2::Volume
+    DeletionPolicy: Delete
     Properties:
       Size: 20
       AvailabilityZone: !GetAtt IdleEC2Instance.AvailabilityZone
