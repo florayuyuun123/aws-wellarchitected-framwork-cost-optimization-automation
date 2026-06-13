@@ -50,6 +50,7 @@ Resources:
                   - ec2:DescribeInstances
                   - ec2:StopInstances
                   - ec2:DescribeVolumes
+                  - ec2:DescribeSnapshots
                   - ec2:CreateSnapshot
                   - ec2:DeleteVolume
                   - s3:ListAllMyBuckets

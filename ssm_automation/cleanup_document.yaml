@@ -15,6 +15,7 @@ mainSteps:
   - name: ExecuteCleanupScript
     action: aws:executeScript
     description: 'Executes the Python cleanup script.'
+    timeoutSeconds: 1800
     inputs:
       Runtime: python3.11
       Handler: script_handler
