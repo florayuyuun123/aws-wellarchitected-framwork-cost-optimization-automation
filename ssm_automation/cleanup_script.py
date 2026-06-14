@@ -20,6 +20,7 @@ def cleanup_unattached_volumes(ec2_client):
         print(f"Created snapshot: {snapshot['SnapshotId']}. Waiting for snapshot to complete (may take 1-5 minutes)...")
         
         # Wait for snapshot to complete before deleting volume
+        # Requires ec2:DescribeSnapshots IAM permission for the waiter to poll snapshot state
         waiter = ec2_client.get_waiter('snapshot_completed')
         waiter.wait(
             SnapshotIds=[snapshot['SnapshotId']],

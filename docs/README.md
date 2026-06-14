@@ -129,8 +129,8 @@ aws s3api list-buckets \
 To ensure you do not incur lingering charges, clean up the resources with these bash commands:
 
 ```bash
-aws cloudformation delete-stack --stack-name flo-tech-Governance --region us-east-1
 aws cloudformation delete-stack --stack-name flo-tech-WastefulInfra --region us-east-1
+aws cloudformation delete-stack --stack-name flo-tech-Governance --region us-east-1
 aws ssm delete-document --name "flo-tech-CostGovCleanup" --region us-east-1
 ```
 ## Cost Optimization Strategies Demonstrated
