@@ -5,7 +5,7 @@ Parameters:
   NotificationEmail:
     Description: Email address to notify regarding cost anomalies and cleanup approvals. Handled securely.
     Type: String
-    Default: prettyflo02@gmail.com
+    Default: <Your-email@example.com>       #Replace with your email address
     NoEcho: true
 
 Resources:
